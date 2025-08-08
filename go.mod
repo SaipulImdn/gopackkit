@@ -3,7 +3,7 @@ module github.com/saipulimdn/gopackkit
 go 1.21
 
 require (
-	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/minio/minio-go/v7 v7.0.70
 	github.com/sirupsen/logrus v1.9.3
 	go.uber.org/zap v1.27.0

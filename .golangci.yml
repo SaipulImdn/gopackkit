@@ -5,20 +5,24 @@ run:
   timeout: 5m
   issues-exit-code: 1
   tests: true
-  skip-dirs:
+
+issues:
+  exclude-dirs:
     - vendor
     - .git
-  skip-files:
+  exclude-files:
     - ".*_test.go"
 
 output:
-  format: colored-line-number
+  formats:
+    - format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
 
 linters-settings:
   govet:
-    check-shadowing: true
+    shadow:
+      strict: true
     settings:
       printf:
         funcs:
@@ -27,7 +31,7 @@ linters-settings:
           - (github.com/sirupsen/logrus.FieldLogger).Errorf
           - (github.com/sirupsen/logrus.FieldLogger).Fatalf
 
-  golint:
+  revive:
     min-confidence: 0
 
   gocyclo:
@@ -41,7 +45,7 @@ linters-settings:
 
   goconst:
     min-len: 2
-    min-occurrences: 2
+    min-occurrences: 3
 
   depguard:
     rules:
@@ -86,12 +90,12 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
+    - unused
     - depguard
     - dogsled
     - dupl
     - errcheck
-    - exportloopref
+    - copyloopvar
     - exhaustive
     - funlen
     - gochecknoinits
@@ -100,36 +104,33 @@ linters:
     - gocyclo
     - gofmt
     - goimports
-    - golint
-    - gomnd
+    - revive
+    - mnd
     - goprintffuncname
     - gosec
     - gosimple
     - govet
     - ineffassign
-    - interfacer
     - lll
     - misspell
     - nakedret
     - noctx
     - nolintlint
     - rowserrcheck
-    - scopelint
     - staticcheck
-    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unparam
     - unused
-    - varcheck
     - whitespace
+    - shadow
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
-        - gomnd
+        - mnd
         - funlen
         - goconst
         - gocyclo
@@ -137,7 +138,7 @@ issues:
 
     - path: examples/
       linters:
-        - gomnd
+        - mnd
         - goconst
 
     - linters:

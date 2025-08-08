@@ -1,3 +1,5 @@
+// Package config provides functionality for loading configuration from environment variables
+// with support for struct tags and default values.
 package config
 
 import (

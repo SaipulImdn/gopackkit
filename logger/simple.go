@@ -124,7 +124,10 @@ func (s *simpleLogger) log(level, msg string, fields ...interface{}) {
 	}
 
 	logMsg := fmt.Sprintf("[%s] %s%s", level, msg, fieldsStr)
-	s.logger.Output(3, logMsg)
+	if err := s.logger.Output(3, logMsg); err != nil {
+		// Handle output error - could log to stderr or ignore
+		_ = err
+	}
 }
 
 // parseSimpleLevel converts string level to simple logger level

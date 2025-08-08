@@ -107,7 +107,7 @@ func (c *Client) doRequest(method, url string, body interface{}, opts ...Request
 		reqBody = bytes.NewBuffer(jsonBody)
 	}
 
-	req, err := http.NewRequest(method, url, reqBody)
+	req, err := http.NewRequestWithContext(context.Background(), method, url, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -136,8 +136,13 @@ func (c *Client) doRequest(method, url string, body interface{}, opts ...Request
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer resp.Body.Close()
-
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			// Log the error or handle as appropriate
+			_ = closeErr
+		}
+	}()
+	
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)

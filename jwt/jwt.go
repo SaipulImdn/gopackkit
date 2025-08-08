@@ -8,6 +8,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+const (
+	defaultAlgorithm = "HS256"
+)
+
 // TokenManager handles JWT token operations
 type TokenManager struct {
 	config Config
@@ -73,7 +77,7 @@ func New(config Config) (*TokenManager, error) {
 		config.Issuer = "gopackkit"
 	}
 	if config.Algorithm == "" {
-		config.Algorithm = "HS256"
+		config.Algorithm = defaultAlgorithm
 	}
 
 	return &TokenManager{
@@ -259,7 +263,7 @@ func (tm *TokenManager) generateToken(claims *Claims) (string, error) {
 	var signingMethod jwt.SigningMethod
 
 	switch tm.config.Algorithm {
-	case "HS256":
+	case defaultAlgorithm:
 		signingMethod = jwt.SigningMethodHS256
 	case "HS384":
 		signingMethod = jwt.SigningMethodHS384

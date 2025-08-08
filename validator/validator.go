@@ -187,7 +187,7 @@ func validateRequired(fieldName string, value interface{}) *ValidationError {
 
 // validateMin validates minimum value/length
 func validateMin(fieldName string, value interface{}, minStr string) *ValidationError {
-	min, err := strconv.Atoi(minStr)
+	minVal, err := strconv.Atoi(minStr)
 	if err != nil {
 		return &ValidationError{
 			Field:   fieldName,
@@ -199,22 +199,22 @@ func validateMin(fieldName string, value interface{}, minStr string) *Validation
 
 	switch v := value.(type) {
 	case string:
-		if len(v) < min {
+		if len(v) < minVal {
 			return &ValidationError{
 				Field:   fieldName,
 				Value:   value,
 				Tag:     "min",
-				Message: fmt.Sprintf("length must be at least %d", min),
+				Message: fmt.Sprintf("length must be at least %d", minVal),
 			}
 		}
 	case int, int8, int16, int32, int64:
 		val := reflect.ValueOf(v).Int()
-		if int(val) < min {
+		if int(val) < minVal {
 			return &ValidationError{
 				Field:   fieldName,
 				Value:   value,
 				Tag:     "min",
-				Message: fmt.Sprintf("value must be at least %d", min),
+				Message: fmt.Sprintf("value must be at least %d", minVal),
 			}
 		}
 	}
@@ -224,7 +224,7 @@ func validateMin(fieldName string, value interface{}, minStr string) *Validation
 
 // validateMax validates maximum value/length
 func validateMax(fieldName string, value interface{}, maxStr string) *ValidationError {
-	max, err := strconv.Atoi(maxStr)
+	maxVal, err := strconv.Atoi(maxStr)
 	if err != nil {
 		return &ValidationError{
 			Field:   fieldName,
@@ -236,22 +236,22 @@ func validateMax(fieldName string, value interface{}, maxStr string) *Validation
 
 	switch v := value.(type) {
 	case string:
-		if len(v) > max {
+		if len(v) > maxVal {
 			return &ValidationError{
 				Field:   fieldName,
 				Value:   value,
 				Tag:     "max",
-				Message: fmt.Sprintf("length must not exceed %d", max),
+				Message: fmt.Sprintf("length must not exceed %d", maxVal),
 			}
 		}
 	case int, int8, int16, int32, int64:
 		val := reflect.ValueOf(v).Int()
-		if int(val) > max {
+		if int(val) > maxVal {
 			return &ValidationError{
 				Field:   fieldName,
 				Value:   value,
 				Tag:     "max",
-				Message: fmt.Sprintf("value must not exceed %d", max),
+				Message: fmt.Sprintf("value must not exceed %d", maxVal),
 			}
 		}
 	}

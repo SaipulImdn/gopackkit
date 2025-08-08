@@ -71,6 +71,14 @@ type HashedPassword struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+const (
+	// Character sets for password generation
+	lowercaseChars = "abcdefghijklmnopqrstuvwxyz"
+	uppercaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	digitChars     = "0123456789"
+	specialChars   = "!@#$%^&*()_+-=[]{}|;:,.<>?"
+)
+
 var (
 	ErrPasswordTooShort   = errors.New("password is too short")
 	ErrPasswordTooLong    = errors.New("password is too long")
@@ -229,8 +237,8 @@ func (pm *Manager) Validate(password string) PasswordValidation {
 }
 
 // calculateStrength calculates password strength and score
-func (pm *Manager) calculateStrength(password string) (PasswordStrength, int) {
-	score := 0
+func (pm *Manager) calculateStrength(password string) (strength PasswordStrength, score int) {
+	score = 0
 
 	// Length scoring
 	length := len(password)
@@ -290,41 +298,35 @@ func (pm *Manager) GenerateRandomPassword(length int) (string, error) {
 		length = pm.config.MaxLength
 	}
 
-	// Character sets
-	lowercase := "abcdefghijklmnopqrstuvwxyz"
-	uppercase := "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	digits := "0123456789"
-	special := "!@#$%^&*()_+-=[]{}|;:,.<>?"
-
 	var charset string
 	var required []byte
 
 	// Build charset and required characters based on config
 	if pm.config.RequireLower {
-		charset += lowercase
-		required = append(required, lowercase[randomInt(len(lowercase))])
+		charset += lowercaseChars
+		required = append(required, lowercaseChars[randomInt(len(lowercaseChars))])
 	}
 	if pm.config.RequireUpper {
-		charset += uppercase
-		required = append(required, uppercase[randomInt(len(uppercase))])
+		charset += uppercaseChars
+		required = append(required, uppercaseChars[randomInt(len(uppercaseChars))])
 	}
 	if pm.config.RequireDigit {
-		charset += digits
-		required = append(required, digits[randomInt(len(digits))])
+		charset += digitChars
+		required = append(required, digitChars[randomInt(len(digitChars))])
 	}
 	if pm.config.RequireSpecial {
-		charset += special
-		required = append(required, special[randomInt(len(special))])
+		charset += specialChars
+		required = append(required, specialChars[randomInt(len(specialChars))])
 	}
 
 	// If no requirements, use all characters
 	if charset == "" {
-		charset = lowercase + uppercase + digits
+		charset = lowercaseChars + uppercaseChars + digitChars
 	}
 
 	// Generate password
 	password := make([]byte, length)
-
+	
 	// Place required characters first
 	for i, char := range required {
 		if i < length {
@@ -344,9 +346,7 @@ func (pm *Manager) GenerateRandomPassword(length int) (string, error) {
 	}
 
 	return string(password), nil
-}
-
-// NeedsRehash checks if password hash needs to be updated (cost changed)
+}// NeedsRehash checks if password hash needs to be updated (cost changed)
 func (pm *Manager) NeedsRehash(hash string) bool {
 	cost, err := bcrypt.Cost([]byte(hash))
 	if err != nil {
@@ -395,7 +395,6 @@ func containsDigit(s string) bool {
 }
 
 func containsSpecial(s string) bool {
-	specialChars := "!@#$%^&*()_+-=[]{}|;:,.<>?"
 	for _, char := range s {
 		for _, special := range specialChars {
 			if char == special {
@@ -457,22 +456,22 @@ func reverse(s string) string {
 	return string(runes)
 }
 
-func randomInt(max int) int {
-	if max <= 0 {
+func randomInt(maxValue int) int {
+	if maxValue <= 0 {
 		return 0
 	}
-
+	
 	bytes := make([]byte, 4)
 	_, err := rand.Read(bytes)
 	if err != nil {
 		// Fallback to time-based randomness
-		return int(time.Now().UnixNano()) % max
+		return int(time.Now().UnixNano()) % maxValue
 	}
-
+	
 	// Convert bytes to int
 	n := int(bytes[0])<<24 | int(bytes[1])<<16 | int(bytes[2])<<8 | int(bytes[3])
 	if n < 0 {
 		n = -n
 	}
-	return n % max
+	return n % maxValue
 }

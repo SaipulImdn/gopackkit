@@ -20,7 +20,7 @@ func newLogrusLogger(config Config) Logger {
 	logger.SetLevel(parseLogrusLevel(config.Level))
 
 	// Set formatter
-	if config.Format == "json" {
+	if config.Format == string(JSONFormat) {
 		logger.SetFormatter(&logrus.JSONFormatter{})
 	} else {
 		logger.SetFormatter(&logrus.TextFormatter{
@@ -96,15 +96,15 @@ func (l *logrusLogger) logWithFields(logFunc func(...interface{}), msg string, f
 // parseLogrusLevel converts string level to logrus level
 func parseLogrusLevel(level string) logrus.Level {
 	switch strings.ToLower(level) {
-	case "debug":
+	case string(DebugLevel):
 		return logrus.DebugLevel
-	case "info":
+	case string(InfoLevel):
 		return logrus.InfoLevel
 	case "warn", "warning":
 		return logrus.WarnLevel
-	case "error":
+	case string(ErrorLevel):
 		return logrus.ErrorLevel
-	case "fatal":
+	case string(FatalLevel):
 		return logrus.FatalLevel
 	default:
 		return logrus.InfoLevel

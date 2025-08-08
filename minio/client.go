@@ -134,15 +134,23 @@ func (c *Client) PostPresignedURL(ctx context.Context, bucketName, objectName st
 	}
 
 	policy := minio.NewPostPolicy()
-	policy.SetBucket(bucketName)
-	policy.SetKey(objectName)
-	policy.SetExpires(time.Now().UTC().Add(opts.Expiry))
+	if err := policy.SetBucket(bucketName); err != nil {
+		return nil, nil, fmt.Errorf("failed to set bucket: %w", err)
+	}
+	if err := policy.SetKey(objectName); err != nil {
+		return nil, nil, fmt.Errorf("failed to set object key: %w", err)
+	}
+	if err := policy.SetExpires(time.Now().UTC().Add(opts.Expiry)); err != nil {
+		return nil, nil, fmt.Errorf("failed to set expiry: %w", err)
+	}
 
 	// Add extra headers as conditions if provided
 	if opts.ExtraHeaders != nil {
 		for key, value := range opts.ExtraHeaders {
-			policy.SetContentType(value)
 			if key == "Content-Type" {
+				if err := policy.SetContentType(value); err != nil {
+					return nil, nil, fmt.Errorf("failed to set content type: %w", err)
+				}
 				break
 			}
 		}
