@@ -70,6 +70,31 @@ user := User{Email: "test@example.com", Age: 25}
 err := validator.Validate(user)
 ```
 
+### JWT Token
+JWT token generation, validation, and management.
+
+```go
+import "github.com/saipulimdn/gopackkit/jwt"
+
+config := jwt.Config{
+    SecretKey:       "your-secret-key",
+    AccessTokenTTL:  15 * time.Minute,
+    RefreshTokenTTL: 7 * 24 * time.Hour,
+    Issuer:          "your-app",
+}
+
+jwtManager, err := jwt.New(config)
+
+// Generate token pair
+tokenPair, err := jwtManager.GenerateTokenPair("user123", "john", "john@example.com", []string{"user"}, nil)
+
+// Validate token
+tokenInfo, err := jwtManager.ValidateToken(tokenPair.AccessToken)
+
+// Refresh token
+newTokenPair, err := jwtManager.RefreshToken(tokenPair.RefreshToken)
+```
+
 ### MinIO Client
 MinIO client with presigned URL generation and object management.
 
