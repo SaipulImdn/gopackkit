@@ -18,11 +18,72 @@ go.work
 .idea/
 *.swp
 *.swo
+*~
+*.iml
+*.iws
+*.ipr
 
 # OS files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Temporary files
 *.log
 .env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Coverage reports
+coverage.out
+coverage.html
+
+# Profiling files
+*.prof
+cpu.prof
+mem.prof
+
+# Build artifacts
+build/
+dist/
+bin/
+
+# Temporary directories
+tmp/
+temp/
+
+# Cache directories
+.cache/
+cache/
+
+# Local development files
+local/
+dev/
+
+# Backup files
+*.backup
+*.bak
+
+# Archive files
+*.tar.gz
+*.zip
+*.rar
+
+# Local configuration files
+config.local.yml
+config.local.yaml
+config.local.json
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker volumes
+docker-data/

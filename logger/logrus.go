@@ -15,10 +15,10 @@ type logrusLogger struct {
 // newLogrusLogger creates a new logrus-based logger
 func newLogrusLogger(config Config) Logger {
 	logger := logrus.New()
-	
+
 	// Set level
 	logger.SetLevel(parseLogrusLevel(config.Level))
-	
+
 	// Set formatter
 	if config.Format == "json" {
 		logger.SetFormatter(&logrus.JSONFormatter{})
@@ -27,10 +27,10 @@ func newLogrusLogger(config Config) Logger {
 			FullTimestamp: true,
 		})
 	}
-	
+
 	// Set output
 	logger.SetOutput(getWriter(config))
-	
+
 	return &logrusLogger{
 		logger: logger,
 		entry:  logger.WithFields(logrus.Fields{}),
@@ -77,7 +77,7 @@ func (l *logrusLogger) logWithFields(logFunc func(...interface{}), msg string, f
 		logFunc(msg)
 		return
 	}
-	
+
 	// Convert fields to logrus.Fields
 	logrusFields := make(logrus.Fields)
 	for i := 0; i < len(fields)-1; i += 2 {
@@ -85,7 +85,7 @@ func (l *logrusLogger) logWithFields(logFunc func(...interface{}), msg string, f
 			logrusFields[key] = fields[i+1]
 		}
 	}
-	
+
 	if len(logrusFields) > 0 {
 		l.entry.WithFields(logrusFields).Log(l.logger.Level, msg)
 	} else {

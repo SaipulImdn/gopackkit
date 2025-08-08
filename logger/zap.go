@@ -23,7 +23,7 @@ func newZapLogger(config Config) Logger {
 		encoderConfig = zap.NewDevelopmentEncoderConfig()
 		encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	}
-	
+
 	// Create encoder
 	var encoder zapcore.Encoder
 	if config.Format == "json" {
@@ -31,16 +31,16 @@ func newZapLogger(config Config) Logger {
 	} else {
 		encoder = zapcore.NewConsoleEncoder(encoderConfig)
 	}
-	
+
 	// Create writer syncer
 	writer := zapcore.AddSync(getWriter(config))
-	
+
 	// Create core
 	core := zapcore.NewCore(encoder, writer, parseZapLevel(config.Level))
-	
+
 	// Create logger
 	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
-	
+
 	return &zapLogger{
 		logger: logger,
 		sugar:  logger.Sugar(),
@@ -80,7 +80,7 @@ func (z *zapLogger) WithFields(fields map[string]interface{}) Logger {
 	for key, value := range fields {
 		zapFields = append(zapFields, zap.Any(key, value))
 	}
-	
+
 	newLogger := z.logger.With(zapFields...)
 	return &zapLogger{
 		logger: newLogger,

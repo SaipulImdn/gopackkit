@@ -47,12 +47,12 @@ func ValidateBucketName(bucketName string) error {
 	if len(bucketName) < 3 || len(bucketName) > 63 {
 		return fmt.Errorf("bucket name must be between 3 and 63 characters long")
 	}
-	
+
 	// Basic validation - you can extend this with more AWS S3 rules
 	if bucketName[0] == '-' || bucketName[len(bucketName)-1] == '-' {
 		return fmt.Errorf("bucket name cannot start or end with a hyphen")
 	}
-	
+
 	return nil
 }
 
@@ -61,10 +61,10 @@ func ValidateObjectName(objectName string) error {
 	if objectName == "" {
 		return fmt.Errorf("object name cannot be empty")
 	}
-	
+
 	if len(objectName) > 1024 {
 		return fmt.Errorf("object name cannot exceed 1024 characters")
 	}
-	
+
 	return nil
 }

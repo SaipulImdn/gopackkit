@@ -1,0 +1,87 @@
+name: Auto Update Dependencies
+
+on:
+  schedule:
+    # Run every Monday at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-dependencies:
+    name: Update Go Dependencies
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.21
+
+    - name: Update dependencies
+      run: |
+        go get -u ./...
+        go mod tidy
+
+    - name: Check for changes
+      id: verify-changed-files
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "changed=true" >> $GITHUB_OUTPUT
+        else
+          echo "changed=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Run tests
+      if: steps.verify-changed-files.outputs.changed == 'true'
+      run: go test ./...
+
+    - name: Run security scan
+      if: steps.verify-changed-files.outputs.changed == 'true'
+      run: |
+        go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+        gosec ./...
+
+    - name: Run vulnerability check
+      if: steps.verify-changed-files.outputs.changed == 'true'
+      run: |
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        govulncheck ./...
+
+    - name: Create Pull Request
+      if: steps.verify-changed-files.outputs.changed == 'true'
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "chore: update Go dependencies"
+        title: "chore: update Go dependencies"
+        body: |
+          ## Automated Dependency Update
+          
+          This PR updates Go dependencies to their latest versions.
+          
+          ### Changes
+          - Updated all Go dependencies to latest versions
+          - Ran `go mod tidy` to clean up go.mod and go.sum
+          
+          ### Testing
+          - (OK) All tests pass
+          - (OK) Security scan passed
+          - (OK) Vulnerability check passed
+          
+          ### Review Checklist
+          - [ ] Check for breaking changes in updated dependencies
+          - [ ] Verify all tests still pass
+          - [ ] Review security implications of updated dependencies
+          
+          This PR was automatically created by GitHub Actions.
+        branch: automated/update-dependencies
+        base: main
+        labels: |
+          dependencies
+          automated
+        reviewers: |
+          saipulimdn

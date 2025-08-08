@@ -17,20 +17,20 @@ type Manager struct {
 
 // Config holds password configuration
 type Config struct {
-	MinLength    int `json:"min_length" yaml:"min_length" env:"PASSWORD_MIN_LENGTH" default:"8"`
-	MaxLength    int `json:"max_length" yaml:"max_length" env:"PASSWORD_MAX_LENGTH" default:"128"`
-	RequireUpper bool `json:"require_upper" yaml:"require_upper" env:"PASSWORD_REQUIRE_UPPER" default:"true"`
-	RequireLower bool `json:"require_lower" yaml:"require_lower" env:"PASSWORD_REQUIRE_LOWER" default:"true"`
-	RequireDigit bool `json:"require_digit" yaml:"require_digit" env:"PASSWORD_REQUIRE_DIGIT" default:"true"`
+	MinLength      int  `json:"min_length" yaml:"min_length" env:"PASSWORD_MIN_LENGTH" default:"8"`
+	MaxLength      int  `json:"max_length" yaml:"max_length" env:"PASSWORD_MAX_LENGTH" default:"128"`
+	RequireUpper   bool `json:"require_upper" yaml:"require_upper" env:"PASSWORD_REQUIRE_UPPER" default:"true"`
+	RequireLower   bool `json:"require_lower" yaml:"require_lower" env:"PASSWORD_REQUIRE_LOWER" default:"true"`
+	RequireDigit   bool `json:"require_digit" yaml:"require_digit" env:"PASSWORD_REQUIRE_DIGIT" default:"true"`
 	RequireSpecial bool `json:"require_special" yaml:"require_special" env:"PASSWORD_REQUIRE_SPECIAL" default:"false"`
-	BcryptCost   int `json:"bcrypt_cost" yaml:"bcrypt_cost" env:"PASSWORD_BCRYPT_COST" default:"12"`
+	BcryptCost     int  `json:"bcrypt_cost" yaml:"bcrypt_cost" env:"PASSWORD_BCRYPT_COST" default:"12"`
 }
 
 // PasswordStrength represents password strength level
 type PasswordStrength int
 
 const (
-	StrengthWeak   PasswordStrength = iota
+	StrengthWeak PasswordStrength = iota
 	StrengthFair
 	StrengthGood
 	StrengthStrong
@@ -56,11 +56,11 @@ func (ps PasswordStrength) String() string {
 
 // PasswordValidation represents password validation result
 type PasswordValidation struct {
-	Valid    bool             `json:"valid"`
-	Strength PasswordStrength `json:"strength"`
-	Score    int              `json:"score"`
-	Errors   []string         `json:"errors,omitempty"`
-	Suggestions []string       `json:"suggestions,omitempty"`
+	Valid       bool             `json:"valid"`
+	Strength    PasswordStrength `json:"strength"`
+	Score       int              `json:"score"`
+	Errors      []string         `json:"errors,omitempty"`
+	Suggestions []string         `json:"suggestions,omitempty"`
 }
 
 // HashedPassword represents a hashed password with metadata
@@ -105,7 +105,7 @@ func NewWithConfig(config Config) *Manager {
 	if config.BcryptCost == 0 {
 		config.BcryptCost = 12
 	}
-	
+
 	// Validate bcrypt cost (4-31)
 	if config.BcryptCost < 4 {
 		config.BcryptCost = 4
@@ -324,7 +324,7 @@ func (pm *Manager) GenerateRandomPassword(length int) (string, error) {
 
 	// Generate password
 	password := make([]byte, length)
-	
+
 	// Place required characters first
 	for i, char := range required {
 		if i < length {
@@ -410,7 +410,7 @@ func hasRepeatingChars(s string) bool {
 	if len(s) < 3 {
 		return false
 	}
-	
+
 	for i := 0; i < len(s)-2; i++ {
 		if s[i] == s[i+1] && s[i+1] == s[i+2] {
 			return true
@@ -423,14 +423,14 @@ func hasSequentialChars(s string) bool {
 	if len(s) < 3 {
 		return false
 	}
-	
+
 	sequences := []string{
 		"abcdefghijklmnopqrstuvwxyz",
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 		"0123456789",
 		"qwertyuiopasdfghjklzxcvbnm", // keyboard layout
 	}
-	
+
 	for _, seq := range sequences {
 		if containsSequence(s, seq, 3) || containsSequence(s, reverse(seq), 3) {
 			return true
@@ -461,14 +461,14 @@ func randomInt(max int) int {
 	if max <= 0 {
 		return 0
 	}
-	
+
 	bytes := make([]byte, 4)
 	_, err := rand.Read(bytes)
 	if err != nil {
 		// Fallback to time-based randomness
 		return int(time.Now().UnixNano()) % max
 	}
-	
+
 	// Convert bytes to int
 	n := int(bytes[0])<<24 | int(bytes[1])<<16 | int(bytes[2])<<8 | int(bytes[3])
 	if n < 0 {

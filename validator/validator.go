@@ -36,12 +36,12 @@ func (ve ValidationErrors) Error() string {
 	if len(ve) == 0 {
 		return ""
 	}
-	
+
 	var messages []string
 	for _, err := range ve {
 		messages = append(messages, err.Error())
 	}
-	
+
 	return strings.Join(messages, "; ")
 }
 
@@ -54,34 +54,34 @@ func Validate(v interface{}) error {
 func ValidateStruct(s interface{}) error {
 	val := reflect.ValueOf(s)
 	typ := reflect.TypeOf(s)
-	
+
 	// Handle pointers
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
 		typ = typ.Elem()
 	}
-	
+
 	if val.Kind() != reflect.Struct {
 		return fmt.Errorf("expected struct, got %s", val.Kind())
 	}
-	
+
 	var errors ValidationErrors
-	
+
 	for i := 0; i < val.NumField(); i++ {
 		field := val.Field(i)
 		fieldType := typ.Field(i)
-		
+
 		// Skip unexported fields
 		if !field.CanInterface() {
 			continue
 		}
-		
+
 		// Get validation tag
 		validateTag := fieldType.Tag.Get("validate")
 		if validateTag == "" {
 			continue
 		}
-		
+
 		// Validate field
 		if err := validateField(fieldType.Name, field.Interface(), validateTag); err != nil {
 			if ve, ok := err.(ValidationErrors); ok {
@@ -91,27 +91,27 @@ func ValidateStruct(s interface{}) error {
 			}
 		}
 	}
-	
+
 	if len(errors) > 0 {
 		return errors
 	}
-	
+
 	return nil
 }
 
 // validateField validates a single field
 func validateField(fieldName string, value interface{}, tag string) error {
 	var errors ValidationErrors
-	
+
 	// Split validation rules
 	rules := strings.Split(tag, ",")
-	
+
 	for _, rule := range rules {
 		rule = strings.TrimSpace(rule)
 		if rule == "" {
 			continue
 		}
-		
+
 		// Parse rule
 		parts := strings.SplitN(rule, "=", 2)
 		ruleName := parts[0]
@@ -119,17 +119,17 @@ func validateField(fieldName string, value interface{}, tag string) error {
 		if len(parts) > 1 {
 			ruleValue = parts[1]
 		}
-		
+
 		// Apply validation rule
 		if err := applyValidationRule(fieldName, value, ruleName, ruleValue); err != nil {
 			errors = append(errors, *err)
 		}
 	}
-	
+
 	if len(errors) > 0 {
 		return errors
 	}
-	
+
 	return nil
 }
 
@@ -196,7 +196,7 @@ func validateMin(fieldName string, value interface{}, minStr string) *Validation
 			Message: "invalid min value",
 		}
 	}
-	
+
 	switch v := value.(type) {
 	case string:
 		if len(v) < min {
@@ -218,7 +218,7 @@ func validateMin(fieldName string, value interface{}, minStr string) *Validation
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -233,7 +233,7 @@ func validateMax(fieldName string, value interface{}, maxStr string) *Validation
 			Message: "invalid max value",
 		}
 	}
-	
+
 	switch v := value.(type) {
 	case string:
 		if len(v) > max {
@@ -255,7 +255,7 @@ func validateMax(fieldName string, value interface{}, maxStr string) *Validation
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -270,7 +270,7 @@ func validateEmail(fieldName string, value interface{}) *ValidationError {
 			Message: "value must be a string",
 		}
 	}
-	
+
 	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 	if !emailRegex.MatchString(str) {
 		return &ValidationError{
@@ -280,7 +280,7 @@ func validateEmail(fieldName string, value interface{}) *ValidationError {
 			Message: "invalid email format",
 		}
 	}
-	
+
 	return nil
 }
 
@@ -295,7 +295,7 @@ func validateURL(fieldName string, value interface{}) *ValidationError {
 			Message: "value must be a string",
 		}
 	}
-	
+
 	urlRegex := regexp.MustCompile(`^https?://[^\s/$.?#].[^\s]*$`)
 	if !urlRegex.MatchString(str) {
 		return &ValidationError{
@@ -305,7 +305,7 @@ func validateURL(fieldName string, value interface{}) *ValidationError {
 			Message: "invalid URL format",
 		}
 	}
-	
+
 	return nil
 }
 
@@ -320,7 +320,7 @@ func validateAlpha(fieldName string, value interface{}) *ValidationError {
 			Message: "value must be a string",
 		}
 	}
-	
+
 	alphaRegex := regexp.MustCompile(`^[a-zA-Z]+$`)
 	if !alphaRegex.MatchString(str) {
 		return &ValidationError{
@@ -330,7 +330,7 @@ func validateAlpha(fieldName string, value interface{}) *ValidationError {
 			Message: "value must contain only alphabetic characters",
 		}
 	}
-	
+
 	return nil
 }
 
@@ -345,7 +345,7 @@ func validateNumeric(fieldName string, value interface{}) *ValidationError {
 			Message: "value must be a string",
 		}
 	}
-	
+
 	numericRegex := regexp.MustCompile(`^[0-9]+$`)
 	if !numericRegex.MatchString(str) {
 		return &ValidationError{
@@ -355,7 +355,7 @@ func validateNumeric(fieldName string, value interface{}) *ValidationError {
 			Message: "value must contain only numeric characters",
 		}
 	}
-	
+
 	return nil
 }
 
@@ -370,7 +370,7 @@ func validateLength(fieldName string, value interface{}, lenStr string) *Validat
 			Message: "invalid length value",
 		}
 	}
-	
+
 	str, ok := value.(string)
 	if !ok {
 		return &ValidationError{
@@ -380,7 +380,7 @@ func validateLength(fieldName string, value interface{}, lenStr string) *Validat
 			Message: "value must be a string",
 		}
 	}
-	
+
 	if len(str) != expectedLen {
 		return &ValidationError{
 			Field:   fieldName,
@@ -389,7 +389,7 @@ func validateLength(fieldName string, value interface{}, lenStr string) *Validat
 			Message: fmt.Sprintf("length must be exactly %d", expectedLen),
 		}
 	}
-	
+
 	return nil
 }
 
@@ -398,7 +398,7 @@ func isEmpty(value interface{}) bool {
 	if value == nil {
 		return true
 	}
-	
+
 	v := reflect.ValueOf(value)
 	switch v.Kind() {
 	case reflect.String:
@@ -423,7 +423,7 @@ func validateEmailSafe(fieldName string, value interface{}) *ValidationError {
 			Message: "value must be a string",
 		}
 	}
-	
+
 	// Simple but secure email validation
 	// Check basic format: something@something.domain
 	if !strings.Contains(str, "@") {
@@ -434,7 +434,7 @@ func validateEmailSafe(fieldName string, value interface{}) *ValidationError {
 			Message: "invalid email format: missing @ symbol",
 		}
 	}
-	
+
 	parts := strings.Split(str, "@")
 	if len(parts) != 2 {
 		return &ValidationError{
@@ -444,10 +444,10 @@ func validateEmailSafe(fieldName string, value interface{}) *ValidationError {
 			Message: "invalid email format: multiple @ symbols",
 		}
 	}
-	
+
 	localPart := parts[0]
 	domainPart := parts[1]
-	
+
 	// Validate local part (before @)
 	if len(localPart) == 0 || len(localPart) > 64 {
 		return &ValidationError{
@@ -457,7 +457,7 @@ func validateEmailSafe(fieldName string, value interface{}) *ValidationError {
 			Message: "invalid email format: local part length must be 1-64 characters",
 		}
 	}
-	
+
 	// Validate domain part (after @)
 	if len(domainPart) == 0 || len(domainPart) > 255 {
 		return &ValidationError{
@@ -467,7 +467,7 @@ func validateEmailSafe(fieldName string, value interface{}) *ValidationError {
 			Message: "invalid email format: domain part length must be 1-255 characters",
 		}
 	}
-	
+
 	// Domain must contain at least one dot
 	if !strings.Contains(domainPart, ".") {
 		return &ValidationError{
@@ -477,7 +477,7 @@ func validateEmailSafe(fieldName string, value interface{}) *ValidationError {
 			Message: "invalid email format: domain must contain at least one dot",
 		}
 	}
-	
+
 	// Check for invalid characters (basic security check)
 	invalidChars := []string{" ", "\t", "\n", "\r", "<", ">", "[", "]", "\\", ",", ";", ":"}
 	for _, char := range invalidChars {
@@ -490,7 +490,7 @@ func validateEmailSafe(fieldName string, value interface{}) *ValidationError {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -505,14 +505,14 @@ func validatePhone(fieldName string, value interface{}) *ValidationError {
 			Message: "value must be a string",
 		}
 	}
-	
+
 	// Remove common phone number separators
 	cleaned := strings.ReplaceAll(str, " ", "")
 	cleaned = strings.ReplaceAll(cleaned, "-", "")
 	cleaned = strings.ReplaceAll(cleaned, "(", "")
 	cleaned = strings.ReplaceAll(cleaned, ")", "")
 	cleaned = strings.ReplaceAll(cleaned, "+", "")
-	
+
 	// Check if it's all digits
 	if !isAllDigits(cleaned) {
 		return &ValidationError{
@@ -522,7 +522,7 @@ func validatePhone(fieldName string, value interface{}) *ValidationError {
 			Message: "phone number must contain only digits and valid separators",
 		}
 	}
-	
+
 	// Check length (10-15 digits as per international standards)
 	if len(cleaned) < 10 || len(cleaned) > 15 {
 		return &ValidationError{
@@ -532,7 +532,7 @@ func validatePhone(fieldName string, value interface{}) *ValidationError {
 			Message: "phone number must be between 10 and 15 digits",
 		}
 	}
-	
+
 	return nil
 }
 
@@ -547,20 +547,20 @@ func validatePhoneIndonesia(fieldName string, value interface{}) *ValidationErro
 			Message: "value must be a string",
 		}
 	}
-	
+
 	// Remove common separators
 	cleaned := strings.ReplaceAll(str, " ", "")
 	cleaned = strings.ReplaceAll(cleaned, "-", "")
 	cleaned = strings.ReplaceAll(cleaned, "(", "")
 	cleaned = strings.ReplaceAll(cleaned, ")", "")
-	
+
 	// Handle Indonesian country code
 	if strings.HasPrefix(cleaned, "+62") {
 		cleaned = "0" + cleaned[3:] // Convert +62xxx to 0xxx
 	} else if strings.HasPrefix(cleaned, "62") && len(cleaned) > 10 {
 		cleaned = "0" + cleaned[2:] // Convert 62xxx to 0xxx
 	}
-	
+
 	// Check if it's all digits
 	if !isAllDigits(cleaned) {
 		return &ValidationError{
@@ -570,7 +570,7 @@ func validatePhoneIndonesia(fieldName string, value interface{}) *ValidationErro
 			Message: "Indonesian phone number must contain only digits",
 		}
 	}
-	
+
 	// Indonesian mobile numbers: 08xx-xxxx-xxxx (10-13 digits)
 	// Indonesian landline: 0xx-xxxx-xxxx (10-11 digits)
 	if !strings.HasPrefix(cleaned, "0") {
@@ -581,7 +581,7 @@ func validatePhoneIndonesia(fieldName string, value interface{}) *ValidationErro
 			Message: "Indonesian phone number must start with 0",
 		}
 	}
-	
+
 	if len(cleaned) < 10 || len(cleaned) > 13 {
 		return &ValidationError{
 			Field:   fieldName,
@@ -590,7 +590,7 @@ func validatePhoneIndonesia(fieldName string, value interface{}) *ValidationErro
 			Message: "Indonesian phone number must be between 10 and 13 digits",
 		}
 	}
-	
+
 	return nil
 }
 
@@ -605,7 +605,7 @@ func validateAlphanumeric(fieldName string, value interface{}) *ValidationError 
 			Message: "value must be a string",
 		}
 	}
-	
+
 	for _, char := range str {
 		if !((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9')) {
 			return &ValidationError{
@@ -616,7 +616,7 @@ func validateAlphanumeric(fieldName string, value interface{}) *ValidationError 
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -631,14 +631,14 @@ func validateNoSpecialChars(fieldName string, value interface{}) *ValidationErro
 			Message: "value must be a string",
 		}
 	}
-	
+
 	// List of potentially dangerous characters for security
 	dangerousChars := []string{
-		"<", ">", "&", "\"", "'", "/", "\\", ";", ":", "|", 
+		"<", ">", "&", "\"", "'", "/", "\\", ";", ":", "|",
 		"*", "?", "[", "]", "{", "}", "$", "`", "!", "@",
 		"#", "%", "^", "(", ")", "=", "+", "~",
 	}
-	
+
 	for _, char := range dangerousChars {
 		if strings.Contains(str, char) {
 			return &ValidationError{
@@ -649,7 +649,7 @@ func validateNoSpecialChars(fieldName string, value interface{}) *ValidationErro
 			}
 		}
 	}
-	
+
 	return nil
 }
 

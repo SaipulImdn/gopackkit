@@ -27,8 +27,8 @@ type Config struct {
 
 // PresignedURLOptions holds options for presigned URL generation
 type PresignedURLOptions struct {
-	Expiry      time.Duration     `json:"expiry"`
-	ReqParams   url.Values        `json:"req_params"`
+	Expiry       time.Duration     `json:"expiry"`
+	ReqParams    url.Values        `json:"req_params"`
 	ExtraHeaders map[string]string `json:"extra_headers"`
 }
 
@@ -159,7 +159,7 @@ func (c *Client) PostPresignedURL(ctx context.Context, bucketName, objectName st
 // DeleteObject deletes an object from the bucket
 func (c *Client) DeleteObject(ctx context.Context, bucketName, objectName string, opts *DeleteObjectOptions) error {
 	var minioOpts minio.RemoveObjectOptions
-	
+
 	if opts != nil && opts.VersionID != "" {
 		minioOpts.VersionID = opts.VersionID
 	}

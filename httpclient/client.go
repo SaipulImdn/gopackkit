@@ -18,11 +18,11 @@ type Client struct {
 
 // Config holds HTTP client configuration
 type Config struct {
-	Timeout         time.Duration `json:"timeout" yaml:"timeout"`
-	Retries         int           `json:"retries" yaml:"retries"`
-	RetryDelay      time.Duration `json:"retry_delay" yaml:"retry_delay"`
-	UserAgent       string        `json:"user_agent" yaml:"user_agent"`
-	DefaultHeaders  map[string]string `json:"default_headers" yaml:"default_headers"`
+	Timeout        time.Duration     `json:"timeout" yaml:"timeout"`
+	Retries        int               `json:"retries" yaml:"retries"`
+	RetryDelay     time.Duration     `json:"retry_delay" yaml:"retry_delay"`
+	UserAgent      string            `json:"user_agent" yaml:"user_agent"`
+	DefaultHeaders map[string]string `json:"default_headers" yaml:"default_headers"`
 }
 
 // Response represents an HTTP response
@@ -77,28 +77,28 @@ func (c *Client) Delete(url string, opts ...RequestOption) (*Response, error) {
 // Do performs an HTTP request with retry logic
 func (c *Client) Do(method, url string, body interface{}, opts ...RequestOption) (*Response, error) {
 	var lastErr error
-	
+
 	for attempt := 0; attempt <= c.config.Retries; attempt++ {
 		resp, err := c.doRequest(method, url, body, opts...)
 		if err == nil {
 			return resp, nil
 		}
-		
+
 		lastErr = err
-		
+
 		// Don't retry on the last attempt
 		if attempt < c.config.Retries {
 			time.Sleep(c.config.RetryDelay)
 		}
 	}
-	
+
 	return nil, fmt.Errorf("request failed after %d attempts: %w", c.config.Retries+1, lastErr)
 }
 
 // doRequest performs a single HTTP request
 func (c *Client) doRequest(method, url string, body interface{}, opts ...RequestOption) (*Response, error) {
 	var reqBody io.Reader
-	
+
 	if body != nil {
 		jsonBody, err := json.Marshal(body)
 		if err != nil {
@@ -106,43 +106,43 @@ func (c *Client) doRequest(method, url string, body interface{}, opts ...Request
 		}
 		reqBody = bytes.NewBuffer(jsonBody)
 	}
-	
+
 	req, err := http.NewRequest(method, url, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	
+
 	// Set default headers
 	for key, value := range c.config.DefaultHeaders {
 		req.Header.Set(key, value)
 	}
-	
+
 	// Set User-Agent
 	if c.config.UserAgent != "" {
 		req.Header.Set("User-Agent", c.config.UserAgent)
 	}
-	
+
 	// Set Content-Type for requests with body
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	
+
 	// Apply request options
 	for _, opt := range opts {
 		opt(req)
 	}
-	
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
-	
+
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
-	
+
 	return &Response{
 		Response: resp,
 		Body:     respBody,

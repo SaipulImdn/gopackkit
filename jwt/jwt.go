@@ -42,10 +42,10 @@ type TokenPair struct {
 
 // TokenInfo represents decoded token information
 type TokenInfo struct {
-	Claims  *Claims   `json:"claims"`
-	Valid   bool      `json:"valid"`
-	Expired bool      `json:"expired"`
-	IssuedAt time.Time `json:"issued_at"`
+	Claims    *Claims   `json:"claims"`
+	Valid     bool      `json:"valid"`
+	Expired   bool      `json:"expired"`
+	IssuedAt  time.Time `json:"issued_at"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
 

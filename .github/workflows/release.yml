@@ -1,0 +1,132 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.21
+
+    - name: Get tag info
+      id: tag_info
+      run: |
+        TAG=${GITHUB_REF#refs/tags/}
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Get previous tag
+        PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        
+        if [ -n "$PREV_TAG" ]; then
+          echo "## Changes since $PREV_TAG" > RELEASE_CHANGELOG.md
+          echo "" >> RELEASE_CHANGELOG.md
+          
+          # Get commits since previous tag
+          git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD >> RELEASE_CHANGELOG.md
+        else
+          echo "## Initial Release" > RELEASE_CHANGELOG.md
+          echo "" >> RELEASE_CHANGELOG.md
+          echo "This is the first release of GoPackKit." >> RELEASE_CHANGELOG.md
+        fi
+        
+        echo "" >> RELEASE_CHANGELOG.md
+        echo "## Installation" >> RELEASE_CHANGELOG.md
+        echo '```bash' >> RELEASE_CHANGELOG.md
+        echo "go get github.com/saipulimdn/gopackkit@${{ steps.tag_info.outputs.tag }}" >> RELEASE_CHANGELOG.md
+        echo '```' >> RELEASE_CHANGELOG.md
+
+    - name: Run tests
+      run: go test ./...
+
+    - name: Build examples
+      run: |
+        # Create examples directory for release
+        mkdir -p release-examples
+        
+        # Create example for each module
+        cat > release-examples/logger_example.go << 'EOF'
+        package main
+        
+        import "github.com/saipulimdn/gopackkit/logger"
+        
+        func main() {
+            log := logger.NewLogrus(logger.LogrusConfig{
+                Level:  "info",
+                Format: "json",
+            })
+            log.Info("Hello from GoPackKit logger!")
+        }
+        EOF
+        
+        cat > release-examples/password_example.go << 'EOF'
+        package main
+        
+        import (
+            "fmt"
+            "github.com/saipulimdn/gopackkit/password"
+        )
+        
+        func main() {
+            pm := password.New()
+            hash, _ := pm.HashString("myPassword123")
+            fmt.Printf("Hashed password: %s\n", hash)
+        }
+        EOF
+
+    - name: Create release archive
+      run: |
+        tar -czf gopackkit-${{ steps.tag_info.outputs.version }}-examples.tar.gz release-examples/
+        zip -r gopackkit-${{ steps.tag_info.outputs.version }}-examples.zip release-examples/
+
+    - name: Create Release
+      uses: actions/create-release@v1
+      id: create_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.tag_info.outputs.tag }}
+        release_name: Release ${{ steps.tag_info.outputs.tag }}
+        body_path: RELEASE_CHANGELOG.md
+        draft: false
+        prerelease: ${{ contains(steps.tag_info.outputs.tag, '-') }}
+
+    - name: Upload Examples (tar.gz)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: gopackkit-${{ steps.tag_info.outputs.version }}-examples.tar.gz
+        asset_name: gopackkit-${{ steps.tag_info.outputs.version }}-examples.tar.gz
+        asset_content_type: application/gzip
+
+    - name: Upload Examples (zip)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: gopackkit-${{ steps.tag_info.outputs.version }}-examples.zip
+        asset_name: gopackkit-${{ steps.tag_info.outputs.version }}-examples.zip
+        asset_content_type: application/zip
+
+    - name: Notify success
+      run: |
+        echo "Release ${{ steps.tag_info.outputs.tag }} created successfully!"
+        echo "Download examples: https://github.com/saipulimdn/gopackkit/releases/tag/${{ steps.tag_info.outputs.tag }}"

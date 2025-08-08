@@ -1,0 +1,50 @@
+---
+name: Feature Request
+about: Suggest an idea for this project
+title: '[FEATURE] '
+labels: ['enhancement']
+assignees: ['saipulimdn']
+
+---
+
+**Is your feature request related to a problem? Please describe.**
+A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+
+**Describe the solution you'd like**
+A clear and concise description of what you want to happen.
+
+**Describe alternatives you've considered**
+A clear and concise description of any alternative solutions or features you've considered.
+
+**Module**
+Which module should this feature be added to?
+- [ ] logger
+- [ ] httpclient
+- [ ] config
+- [ ] validator
+- [ ] minio
+- [ ] jwt
+- [ ] password
+- [ ] new module
+
+**Example Usage**
+```go
+// Show how you'd like to use this feature
+package main
+
+import "github.com/saipulimdn/gopackkit/..."
+
+func main() {
+    // Your proposed API usage here
+}
+```
+
+**Benefits**
+- [ ] Improves security
+- [ ] Improves performance
+- [ ] Adds convenience
+- [ ] Enables new use cases
+- [ ] Other: [please specify]
+
+**Additional context**
+Add any other context or screenshots about the feature request here.

@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # GoPackKit development environment
+  gopackkit-dev:
+    build:
+      context: .
+      target: development
+    container_name: gopackkit-dev
+    volumes:
+      - .:/app
+      - go-modules:/go/pkg/mod
+    working_dir: /app
+    environment:
+      - GO111MODULE=on
+      - CGO_ENABLED=0
+      - GOOS=linux
+    networks:
+      - gopackkit-network
+    command: bash
+    stdin_open: true
+    tty: true
+
+  # Testing environment
+  gopackkit-test:
+    build:
+      context: .
+      target: tester
+    container_name: gopackkit-test
+    volumes:
+      - .:/app
+      - go-modules:/go/pkg/mod
+    working_dir: /app
+    environment:
+      - GO111MODULE=on
+      - CGO_ENABLED=0
+    networks:
+      - gopackkit-network
+    command: ["go", "test", "-v", "./..."]
+
+  # Production build
+  gopackkit-prod:
+    build:
+      context: .
+      target: final
+    container_name: gopackkit-prod
+    networks:
+      - gopackkit-network
+    restart: unless-stopped
+
+  # MinIO for testing MinIO module
+  minio:
+    image: minio/minio:latest
+    container_name: gopackkit-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio-data:/data
+    networks:
+      - gopackkit-network
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # Redis for caching (if needed for examples)
+  redis:
+    image: redis:7-alpine
+    container_name: gopackkit-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - gopackkit-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  go-modules:
+  minio-data:
+  redis-data:
+
+networks:
+  gopackkit-network:
+    driver: bridge

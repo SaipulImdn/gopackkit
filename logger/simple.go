@@ -25,14 +25,14 @@ const (
 func newSimpleLogger(config Config) Logger {
 	writer := getWriter(config)
 	level := parseSimpleLevel(config.Level)
-	
+
 	var logger *log.Logger
 	if config.Format == "json" {
 		logger = log.New(writer, "", 0)
 	} else {
 		logger = log.New(writer, "", log.LstdFlags)
 	}
-	
+
 	return &simpleLogger{
 		logger: logger,
 		level:  level,
@@ -75,7 +75,7 @@ func (s *simpleLogger) WithField(key string, value interface{}) Logger {
 		newFields[k] = v
 	}
 	newFields[key] = value
-	
+
 	return &simpleLogger{
 		logger: s.logger,
 		level:  s.level,
@@ -91,7 +91,7 @@ func (s *simpleLogger) WithFields(fields map[string]interface{}) Logger {
 	for k, v := range fields {
 		newFields[k] = v
 	}
-	
+
 	return &simpleLogger{
 		logger: s.logger,
 		level:  s.level,
@@ -105,14 +105,14 @@ func (s *simpleLogger) log(level, msg string, fields ...interface{}) {
 	for k, v := range s.fields {
 		allFields[k] = v
 	}
-	
+
 	// Add new fields from parameters
 	for i := 0; i < len(fields)-1; i += 2 {
 		if key, ok := fields[i].(string); ok && i+1 < len(fields) {
 			allFields[key] = fields[i+1]
 		}
 	}
-	
+
 	// Build log message
 	var fieldsStr string
 	if len(allFields) > 0 {
@@ -122,7 +122,7 @@ func (s *simpleLogger) log(level, msg string, fields ...interface{}) {
 		}
 		fieldsStr = " " + strings.Join(parts, " ")
 	}
-	
+
 	logMsg := fmt.Sprintf("[%s] %s%s", level, msg, fieldsStr)
 	s.logger.Output(3, logMsg)
 }
