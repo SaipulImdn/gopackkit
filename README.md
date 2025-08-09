@@ -1,6 +1,6 @@
 # GoPackKit
 
-GoPackKit adalah kumpulan utility modules untuk Go yang dapat digunakan kembali di berbagai project. Module ini menyediakan fungsionalitas umum seperti logging, HTTP client, konfigurasi, validasi, MinIO integration, JWT token management, dan password hashing.
+GoPackKit is a collection of reusable utility modules for Go applications. This toolkit provides common functionality including logging, HTTP client, configuration management, validation, object storage, authentication, and secure password handling.
 
 ## Installation
 
@@ -10,448 +10,226 @@ go get github.com/saipulimdn/gopackkit
 
 ## Modules
 
-- [Logger](#logger) - Multi-backend logging (Simple, Logrus, Zap)
-- [HTTP Client](#http-client) - HTTP client dengan retry mechanism
-- [Config](#config) - Environment variable loader
-- [Validator](#validator) - Data validation dengan security focus
-- [MinIO](#minio) - MinIO client untuk object storage
-- [JWT](#jwt) - JWT token management
-- [Password](#password) - Password hashing dan validation
+GoPackKit provides the following modules, each with comprehensive documentation:
 
----
+### Core Utilities
+- **[Logger](logger/)** - Multi-backend logging with Simple, Logrus, and Zap support
+- **[HTTP Client](httpclient/)** - HTTP client with retry mechanism and timeout configuration
+- **[Config](config/)** - Environment variable loader with struct tag support
+- **[Validator](validator/)** - Secure data validation with XSS/injection prevention
 
-## Logger
+### Authentication & Security  
+- **[JWT](jwt/)** - JSON Web Token management with HMAC-SHA256 signing
+- **[Password](password/)** - Secure password hashing and validation using bcrypt
 
-Logger module menyediakan multiple backend logging dengan interface yang unified.
+### Storage & Communication
+- **[MinIO](minio/)** - MinIO client for object storage with presigned URL support
+- **[gRPC](grpc/)** - gRPC client and server with comprehensive configuration
 
-### Features
+## Quick Start
 
-- Multiple backends: Simple, Logrus, Zap
-- Configurable log levels dan formats
-- JSON dan text output formats
-- Thread-safe operations
-
-### Usage
+Each module can be used independently. Here's a simple example using multiple modules:
 
 ```go
-import "github.com/saipulimdn/gopackkit/logger"
+package main
 
-// Simple Logger
-simpleLogger := logger.NewSimple()
-simpleLogger.Info("This is an info message")
-
-// Logrus Logger
-logrusLogger := logger.NewLogrus(logger.LogrusConfig{
-    Level:  "info",
-    Format: "json",
-})
-logrusLogger.Error("This is an error message")
-
-// Zap Logger
-zapLogger := logger.NewZap(logger.ZapConfig{
-    Level:       "debug",
-    Development: true,
-    Encoding:    "console",
-})
-zapLogger.Debug("This is a debug message")
-```
-
-### Configuration
-
-```go
-// Logrus Configuration
-config := logger.LogrusConfig{
-    Level:  "info",        // panic, fatal, error, warn, info, debug, trace
-    Format: "json",        // json, text
-}
-
-// Zap Configuration
-config := logger.ZapConfig{
-    Level:       "info",   // debug, info, warn, error, dpanic, panic, fatal
-    Development: false,    // true for development mode
-    Encoding:    "json",   // json, console
-}
-```
-
----
-
-## HTTP Client
-
-HTTP client dengan retry mechanism dan configurable timeout.
-
-### Features
-
-- Automatic retry dengan exponential backoff
-- Configurable timeout dan retry attempts
-- Request/Response middleware support
-- Error handling yang robust
-
-### Usage
-
-```go
-import "github.com/saipulimdn/gopackkit/httpclient"
-
-// Default client
-client := httpclient.New()
-
-// Custom configuration
-config := httpclient.Config{
-    Timeout:      30 * time.Second,
-    MaxRetries:   3,
-    RetryDelay:   1 * time.Second,
-    MaxRetryDelay: 10 * time.Second,
-}
-client := httpclient.NewWithConfig(config)
-
-// Make requests
-resp, err := client.Get("https://api.example.com/data")
-if err != nil {
-    log.Fatal(err)
-}
-defer resp.Body.Close()
-
-// POST with JSON
-data := map[string]interface{}{
-    "name": "John Doe",
-    "email": "john@example.com",
-}
-resp, err := client.PostJSON("https://api.example.com/users", data)
-```
-
-### Methods
-
-- `Get(url string) (*http.Response, error)`
-- `Post(url, contentType string, body io.Reader) (*http.Response, error)`
-- `PostJSON(url string, data interface{}) (*http.Response, error)`
-- `Put(url, contentType string, body io.Reader) (*http.Response, error)`
-- `Delete(url string) (*http.Response, error)`
-- `Do(req *http.Request) (*http.Response, error)`
-
----
-
-## Config
-
-Environment variable loader dengan struct tag support.
-
-### Features
-
-- Automatic environment variable mapping
-- Default values support
-- Type conversion (string, int, bool, duration)
-- Struct tag based configuration
-
-### Usage
-
-```go
-import "github.com/saipulimdn/gopackkit/config"
+import (
+    "log"
+    "time"
+    
+    "github.com/saipulimdn/gopackkit/config"
+    "github.com/saipulimdn/gopackkit/logger"
+    "github.com/saipulimdn/gopackkit/password"
+    "github.com/saipulimdn/gopackkit/jwt"
+)
 
 type AppConfig struct {
-    Port        int           `env:"PORT" default:"8080"`
-    DatabaseURL string        `env:"DATABASE_URL" default:"localhost:5432"`
-    Debug       bool          `env:"DEBUG" default:"false"`
-    Timeout     time.Duration `env:"TIMEOUT" default:"30s"`
-    SecretKey   string        `env:"SECRET_KEY"`
+    Port       int    `env:"PORT" default:"8080"`
+    LogLevel   string `env:"LOG_LEVEL" default:"info"`
+    JWTSecret  string `env:"JWT_SECRET" default:"your-secret-key"`
 }
 
 func main() {
+    // Load configuration
     var cfg AppConfig
+    if err := config.Load(&cfg); err != nil {
+        log.Fatal("Failed to load config:", err)
+    }
     
-    // Load from environment variables
-    err := config.Load(&cfg)
+    // Setup logger
+    logger := logger.NewLogrus(logger.LogrusConfig{
+        Level:  cfg.LogLevel,
+        Format: "json",
+    })
+    
+    // Setup password manager
+    pm := password.New()
+    
+    // Setup JWT manager
+    jwtManager := jwt.New(jwt.Config{
+        SecretKey:         cfg.JWTSecret,
+        AccessTokenExpiry: 15 * time.Minute,
+        Issuer:           "gopackkit-example",
+    })
+    
+    logger.Info("Application started successfully",
+        "port", cfg.Port,
+        "log_level", cfg.LogLevel,
+    )
+    
+    // Example usage
+    testPassword := "MySecurePassword123!"
+    
+    // Hash password
+    hashedPassword, err := pm.Hash(testPassword)
     if err != nil {
-        log.Fatal(err)
+        logger.Error("Failed to hash password", "error", err)
+        return
     }
     
-    fmt.Printf("Server running on port: %d\n", cfg.Port)
-    fmt.Printf("Database URL: %s\n", cfg.DatabaseURL)
-    fmt.Printf("Debug mode: %t\n", cfg.Debug)
-}
-```
-
-### Supported Types
-
-- `string`
-- `int`, `int8`, `int16`, `int32`, `int64`
-- `uint`, `uint8`, `uint16`, `uint32`, `uint64`
-- `float32`, `float64`
-- `bool`
-- `time.Duration`
-
----
-
-## Validator
-
-Data validation dengan security focus untuk menghindari vulnerability.
-
-### Features
-
-- Secure validation rules (no regex injection)
-- Phone number validation (10-15 digits)
-- Safe email validation (basic @ check)
-- Alphanumeric dan no special chars validation
-- Required field validation
-
-### Usage
-
-```go
-import "github.com/saipulimdn/gopackkit/validator"
-
-type User struct {
-    Name        string `validate:"required"`
-    Email       string `validate:"required,email_safe"`
-    Phone       string `validate:"required,phone"`
-    Username    string `validate:"required,alphanumeric"`
-    Description string `validate:"no_special_chars"`
-}
-
-func main() {
-    v := validator.New()
-    
-    user := User{
-        Name:        "John Doe",
-        Email:       "john@example.com",
-        Phone:       "1234567890",
-        Username:    "johndoe123",
-        Description: "Simple description",
+    // Generate JWT token
+    claims := jwt.Claims{
+        UserID: "user123",
+        Email:  "user@example.com",
+        Role:   "user",
     }
     
-    err := v.Struct(user)
+    tokens, err := jwtManager.GenerateTokens(claims)
     if err != nil {
-        fmt.Printf("Validation errors: %v\n", err)
+        logger.Error("Failed to generate tokens", "error", err)
+        return
     }
+    
+    logger.Info("Successfully processed user",
+        "password_hash", hashedPassword.Hash,
+        "access_token", tokens.AccessToken,
+    )
 }
 ```
 
-### Validation Rules
+## Module Overview
 
-- `required` - Field tidak boleh kosong
-- `email_safe` - Email format basic (mengandung @)
-- `phone` - Nomor telepon 10-15 digit
-- `alphanumeric` - Hanya huruf dan angka
-- `no_special_chars` - Tidak mengandung karakter special
+### [Logger](logger/)
+Multi-backend logging system supporting Simple, Logrus, and Zap with:
+- Configurable log levels and formats
+- JSON and text output support
+- Environment variable configuration
+- Thread-safe operations
 
----
+### [HTTP Client](httpclient/)
+Robust HTTP client with enterprise features:
+- Automatic retry with exponential backoff
+- Configurable timeouts and connection pooling
+- JSON request/response handling
+- Comprehensive error handling
 
-## MinIO
+### [Config](config/)
+Environment variable configuration loader:
+- Struct tag-based mapping
+- Type conversion support
+- Default value handling
+- Nested struct support
 
-MinIO client untuk object storage operations.
+### [Validator](validator/)
+Security-focused data validation:
+- XSS and injection prevention
+- Safe email and phone validation
+- Alphanumeric checking
+- No regex injection vulnerabilities
 
-### Features
-
-- Presigned URL generation (GET, PUT, POST)
-- Object upload dan download
-- Bucket operations
-- Configurable expiration times
-
-### Usage
-
-```go
-import "github.com/saipulimdn/gopackkit/minio"
-
-// Configuration
-config := minio.Config{
-    Endpoint:        "localhost:9000",
-    AccessKeyID:     "minioadmin",
-    SecretAccessKey: "minioadmin",
-    UseSSL:          false,
-    Region:          "us-east-1",
-}
-
-client, err := minio.New(config)
-if err != nil {
-    log.Fatal(err)
-}
-
-// Generate presigned URL for upload
-uploadURL, err := client.GeneratePresignedPutURL("my-bucket", "my-object.jpg", 1*time.Hour)
-if err != nil {
-    log.Fatal(err)
-}
-fmt.Printf("Upload URL: %s\n", uploadURL)
-
-// Generate presigned URL for download
-downloadURL, err := client.GeneratePresignedGetURL("my-bucket", "my-object.jpg", 1*time.Hour)
-if err != nil {
-    log.Fatal(err)
-}
-fmt.Printf("Download URL: %s\n", downloadURL)
-
-// Upload object
-err = client.UploadObject("my-bucket", "my-object.txt", "./local-file.txt")
-if err != nil {
-    log.Fatal(err)
-}
-```
-
-### Methods
-
-- `GeneratePresignedGetURL(bucket, object string, expiry time.Duration) (string, error)`
-- `GeneratePresignedPutURL(bucket, object string, expiry time.Duration) (string, error)`
-- `GeneratePresignedPostURL(bucket, object string, expiry time.Duration) (map[string]string, error)`
-- `UploadObject(bucket, object, filePath string) error`
-- `DownloadObject(bucket, object, filePath string) error`
-- `DeleteObject(bucket, object string) error`
-- `ObjectExists(bucket, object string) (bool, error)`
-
----
-
-## JWT
-
-JWT token management dengan HMAC signing.
-
-### Features
-
-- Token generation dengan custom claims
-- Token validation dan parsing
-- Refresh token mechanism
-- Configurable expiration times
+### [JWT](jwt/)
+JSON Web Token management:
 - HMAC-SHA256 signing
+- Access and refresh token support
+- Custom claims handling
+- Token validation and refresh
 
-### Usage
-
-```go
-import "github.com/saipulimdn/gopackkit/jwt"
-
-// Configuration
-config := jwt.Config{
-    SecretKey:            "your-secret-key",
-    AccessTokenExpiry:    15 * time.Minute,
-    RefreshTokenExpiry:   7 * 24 * time.Hour,
-    Issuer:              "your-app",
-}
-
-jwtManager := jwt.New(config)
-
-// Generate token
-claims := jwt.Claims{
-    UserID: "user123",
-    Email:  "user@example.com",
-    Role:   "admin",
-}
-
-tokens, err := jwtManager.GenerateTokens(claims)
-if err != nil {
-    log.Fatal(err)
-}
-
-fmt.Printf("Access Token: %s\n", tokens.AccessToken)
-fmt.Printf("Refresh Token: %s\n", tokens.RefreshToken)
-
-// Validate token
-validClaims, err := jwtManager.ValidateAccessToken(tokens.AccessToken)
-if err != nil {
-    log.Fatal(err)
-}
-
-fmt.Printf("User ID: %s\n", validClaims.UserID)
-fmt.Printf("Email: %s\n", validClaims.Email)
-
-// Refresh tokens
-newTokens, err := jwtManager.RefreshTokens(tokens.RefreshToken)
-if err != nil {
-    log.Fatal(err)
-}
-```
-
-### Token Claims
-
-```go
-type Claims struct {
-    UserID   string                 `json:"user_id"`
-    Email    string                 `json:"email"`
-    Role     string                 `json:"role"`
-    Metadata map[string]interface{} `json:"metadata,omitempty"`
-}
-```
-
----
-
-## Password
-
-Password hashing dan validation menggunakan bcrypt.
-
-### Features
-
-- Secure bcrypt hashing
+### [Password](password/)
+Secure password operations:
+- Bcrypt hashing with configurable cost
 - Password strength validation
-- Configurable validation rules
 - Random password generation
-- Hash migration detection
+- Hash migration support
 
-### Usage
+### [MinIO](minio/)
+Object storage client:
+- Presigned URL generation (GET, PUT, POST)
+- Object upload/download operations
+- Bucket management
+- TLS support
+
+### [gRPC](grpc/)
+gRPC client and server implementation:
+- Connection management and health checking
+- TLS/SSL support
+- Keep-alive configuration
+- Graceful shutdown handling
+
+## Features
+
+### Security First
+- **Input Validation**: Comprehensive validation without regex injection risks
+- **Secure Hashing**: Bcrypt with configurable cost factors
+- **JWT Security**: HMAC-SHA256 signing with proper claim validation
+- **TLS Support**: Full TLS/SSL support across all network modules
+
+### Production Ready
+- **Error Handling**: Comprehensive error handling and logging
+- **Configuration**: Environment variable support across all modules
+- **Performance**: Optimized for production workloads
+- **Monitoring**: Built-in health checks and status monitoring
+
+### Developer Friendly
+- **Easy Integration**: Simple APIs with sensible defaults
+- **Comprehensive Documentation**: Detailed examples and use cases
+- **Testing Support**: Built-in testing utilities and examples
+- **Flexible Configuration**: Customizable settings for different environments
+
+## Installation & Usage
+
+### Individual Modules
+
+You can import and use individual modules as needed:
 
 ```go
-import "github.com/saipulimdn/gopackkit/password"
+// Logger module
+import "github.com/saipulimdn/gopackkit/logger"
 
-// Default configuration
-pm := password.New()
+// HTTP Client module  
+import "github.com/saipulimdn/gopackkit/httpclient"
 
-// Hash password
-hashedPassword, err := pm.Hash("mySecurePassword123")
-if err != nil {
-    log.Fatal(err)
-}
+// Config module
+import "github.com/saipulimdn/gopackkit/config"
 
-fmt.Printf("Hash: %s\n", hashedPassword.Hash)
-
-// Verify password
-err = pm.Verify("mySecurePassword123", hashedPassword.Hash)
-if err != nil {
-    log.Fatal("Password verification failed:", err)
-}
-
-fmt.Println("Password verified successfully!")
-
-// Validate password strength
-validation := pm.Validate("mySecurePassword123")
-fmt.Printf("Valid: %t\n", validation.Valid)
-fmt.Printf("Strength: %s\n", validation.Strength)
-fmt.Printf("Score: %d\n", validation.Score)
-
-// Generate random password
-randomPassword, err := pm.GenerateRandomPassword(16)
-if err != nil {
-    log.Fatal(err)
-}
-fmt.Printf("Generated password: %s\n", randomPassword)
+// And so on...
 ```
 
-### Custom Configuration
+### Full Toolkit
+
+Or import the entire toolkit:
 
 ```go
-config := password.Config{
-    MinLength:      12,
-    MaxLength:      64,
-    RequireUpper:   true,
-    RequireLower:   true,
-    RequireDigit:   true,
-    RequireSpecial: true,
-    BcryptCost:     14,
-}
-
-pm := password.NewWithConfig(config)
+import (
+    "github.com/saipulimdn/gopackkit/logger"
+    "github.com/saipulimdn/gopackkit/httpclient"
+    "github.com/saipulimdn/gopackkit/config"
+    "github.com/saipulimdn/gopackkit/validator"
+    "github.com/saipulimdn/gopackkit/jwt"
+    "github.com/saipulimdn/gopackkit/password"
+    "github.com/saipulimdn/gopackkit/minio"
+    "github.com/saipulimdn/gopackkit/grpc"
+)
 ```
-
-### Password Strength Levels
-
-- **Weak** (0-2 points): Basic passwords
-- **Fair** (3-4 points): Some requirements met
-- **Good** (5-6 points): Most requirements met
-- **Strong** (7-8 points): All requirements met
-- **Very Strong** (9+ points): Excellent passwords
-
----
 
 ## Examples
 
-### Complete Web API Example
+### Complete Web Application
 
 ```go
 package main
 
 import (
     "encoding/json"
-    "fmt"
     "net/http"
     "time"
     
@@ -460,6 +238,7 @@ import (
     "github.com/saipulimdn/gopackkit/logger"
     "github.com/saipulimdn/gopackkit/password"
     "github.com/saipulimdn/gopackkit/validator"
+    "github.com/saipulimdn/gopackkit/httpclient"
 )
 
 type Config struct {
@@ -473,6 +252,12 @@ type LoginRequest struct {
     Password string `json:"password" validate:"required"`
 }
 
+type User struct {
+    ID       string `json:"id"`
+    Email    string `json:"email"`
+    Password string `json:"-"`
+}
+
 func main() {
     // Load configuration
     var cfg Config
@@ -480,25 +265,12 @@ func main() {
         panic(err)
     }
     
-    // Setup logger
-    log := logger.NewLogrus(logger.LogrusConfig{
-        Level:  cfg.LogLevel,
-        Format: "json",
-    })
-    
-    // Setup JWT
-    jwtManager := jwt.New(jwt.Config{
-        SecretKey:         cfg.JWTSecret,
-        AccessTokenExpiry: 15 * time.Minute,
-        RefreshTokenExpiry: 7 * 24 * time.Hour,
-        Issuer:           "my-app",
-    })
-    
-    // Setup password manager
+    // Setup components
+    log := logger.NewLogrus(logger.LogrusConfig{Level: cfg.LogLevel, Format: "json"})
     pm := password.New()
-    
-    // Setup validator
-    v := validator.New()
+    jwtManager := jwt.New(jwt.Config{SecretKey: cfg.JWTSecret, Issuer: "myapp"})
+    validator := validator.New()
+    httpClient := httpclient.New()
     
     // Login handler
     http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
@@ -509,40 +281,32 @@ func main() {
         }
         
         // Validate request
-        if err := v.Struct(req); err != nil {
+        if err := validator.Struct(req); err != nil {
             http.Error(w, err.Error(), http.StatusBadRequest)
             return
         }
         
-        // In real app, get user from database
+        // Authenticate user (simplified)
+        user := User{ID: "user123", Email: req.Email}
         storedHash := "$2a$12$..." // from database
         
-        // Verify password
         if err := pm.Verify(req.Password, storedHash); err != nil {
             log.Warn("Invalid login attempt", "email", req.Email)
             http.Error(w, "Invalid credentials", http.StatusUnauthorized)
             return
         }
         
-        // Generate tokens
-        claims := jwt.Claims{
-            UserID: "user123",
-            Email:  req.Email,
-            Role:   "user",
-        }
-        
+        // Generate JWT tokens
+        claims := jwt.Claims{UserID: user.ID, Email: user.Email, Role: "user"}
         tokens, err := jwtManager.GenerateTokens(claims)
         if err != nil {
             log.Error("Failed to generate tokens", "error", err)
-            http.Error(w, "Internal server error", http.StatusInternalServerError)
+            http.Error(w, "Internal error", http.StatusInternalServerError)
             return
         }
         
-        // Return tokens
-        w.Header().Set("Content-Type", "application/json")
+        log.Info("User logged in", "user_id", user.ID, "email", user.Email)
         json.NewEncoder(w).Encode(tokens)
-        
-        log.Info("User logged in successfully", "email", req.Email)
     })
     
     log.Info("Server starting", "port", cfg.Port)
@@ -550,31 +314,179 @@ func main() {
 }
 ```
 
-## Security Features
+### Microservice with gRPC
 
-### Validator Security
-- **No Regex Injection**: Menggunakan character-by-character validation
-- **Safe Email Check**: Basic @ validation tanpa complex regex
-- **Phone Validation**: Length-based validation (10-15 digits)
+```go
+package main
 
-### Password Security
-- **Bcrypt Hashing**: Industry standard algorithm
-- **Configurable Cost**: Adjustable untuk future-proofing
-- **Secure Random**: Menggunakan crypto/rand
-- **Pattern Detection**: Deteksi weak patterns
+import (
+    "context"
+    "log"
+    "net"
+    
+    "github.com/saipulimdn/gopackkit/grpc"
+    "github.com/saipulimdn/gopackkit/logger"
+    "github.com/saipulimdn/gopackkit/config"
+    "github.com/saipulimdn/gopackkit/validator"
+)
 
-### JWT Security
-- **HMAC-SHA256**: Secure signing algorithm
-- **Configurable Expiry**: Access dan refresh token expiry
-- **Token Refresh**: Secure token refresh mechanism
+type ServiceConfig struct {
+    GRPCPort  int    `env:"GRPC_PORT" default:"9000"`
+    HTTPPort  int    `env:"HTTP_PORT" default:"8080"`
+    LogLevel  string `env:"LOG_LEVEL" default:"info"`
+}
+
+func main() {
+    var cfg ServiceConfig
+    config.Load(&cfg)
+    
+    log := logger.NewZap(logger.ZapConfig{Level: cfg.LogLevel})
+    validator := validator.New()
+    
+    // Create gRPC server
+    grpcServer, err := grpc.NewServerWithConfig(grpc.ServerConfig{
+        Port: cfg.GRPCPort,
+        EnableReflection: true,
+    })
+    if err != nil {
+        log.Fatal("Failed to create gRPC server", "error", err)
+    }
+    
+    // Register services and start server
+    log.Info("Starting microservice", "grpc_port", cfg.GRPCPort)
+    if err := grpcServer.Start(); err != nil {
+        log.Fatal("Failed to start gRPC server", "error", err)
+    }
+}
+```
+
+### File Upload Service with MinIO
+
+```go
+package main
+
+import (
+    "encoding/json"
+    "net/http"
+    "time"
+    
+    "github.com/saipulimdn/gopackkit/minio"
+    "github.com/saipulimdn/gopackkit/logger"
+    "github.com/saipulimdn/gopackkit/validator"
+)
+
+type UploadRequest struct {
+    Filename string `json:"filename" validate:"required"`
+    Bucket   string `json:"bucket" validate:"required,alphanumeric"`
+}
+
+func main() {
+    log := logger.NewSimple()
+    validator := validator.New()
+    
+    // Setup MinIO client
+    minioClient, err := minio.New(minio.Config{
+        Endpoint:        "localhost:9000",
+        AccessKeyID:     "minioadmin",
+        SecretAccessKey: "minioadmin",
+        UseSSL:          false,
+    })
+    if err != nil {
+        log.Fatal("Failed to create MinIO client", "error", err)
+    }
+    
+    http.HandleFunc("/upload-url", func(w http.ResponseWriter, r *http.Request) {
+        var req UploadRequest
+        json.NewDecoder(r.Body).Decode(&req)
+        
+        if err := validator.Struct(req); err != nil {
+            http.Error(w, err.Error(), http.StatusBadRequest)
+            return
+        }
+        
+        // Generate presigned upload URL
+        uploadURL, err := minioClient.GeneratePresignedPutURL(
+            req.Bucket, req.Filename, 1*time.Hour)
+        if err != nil {
+            http.Error(w, "Failed to generate URL", http.StatusInternalServerError)
+            return
+        }
+        
+        json.NewEncoder(w).Encode(map[string]string{"upload_url": uploadURL})
+    })
+    
+    log.Info("File upload service started on :8080")
+    http.ListenAndServe(":8080", nil)
+}
+```
+
+## Environment Variables
+
+All modules support environment variable configuration:
+
+```bash
+# Logger
+export LOG_LEVEL=info
+export LOG_FORMAT=json
+
+# HTTP Client  
+export HTTP_CLIENT_TIMEOUT=30s
+export HTTP_CLIENT_MAX_RETRIES=3
+
+# JWT
+export JWT_SECRET_KEY=your-super-secret-key
+export JWT_ACCESS_TOKEN_EXPIRY=15m
+export JWT_REFRESH_TOKEN_EXPIRY=7d
+
+# Password
+export PASSWORD_MIN_LENGTH=12
+export PASSWORD_BCRYPT_COST=14
+
+# MinIO
+export MINIO_ENDPOINT=localhost:9000
+export MINIO_ACCESS_KEY_ID=minioadmin
+export MINIO_SECRET_ACCESS_KEY=minioadmin
+
+# gRPC
+export GRPC_CLIENT_HOST=api.example.com
+export GRPC_CLIENT_PORT=9000
+export GRPC_SERVER_PORT=9090
+```
+
+## Testing
+
+Each module includes comprehensive tests. Run tests for all modules:
+
+```bash
+# Run all tests
+go test ./...
+
+# Run tests with coverage
+go test -cover ./...
+
+# Run tests for specific module
+go test ./logger
+go test ./httpclient
+go test ./config
+```
 
 ## Contributing
 
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes with tests
+4. Ensure all tests pass (`go test ./...`)
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+### Development Guidelines
+
+- Write comprehensive tests for new features
+- Update documentation for API changes
+- Follow Go best practices and conventions
+- Ensure backwards compatibility when possible
+- Add examples for new functionality
 
 ## License
 
@@ -582,4 +494,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-Jika ada pertanyaan atau issue, silakan buat issue di GitHub repository ini.
+- **Documentation**: Each module has detailed README with examples
+- **Issues**: Report bugs and request features via GitHub Issues
+- **Discussions**: Use GitHub Discussions for questions and community support
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release notes and version history.
